@@ -85,6 +85,9 @@ Spree::Stock::Estimator.class_eval do
       item.line_item.quantity * item.variant.weight
     end
 
+    if total_weight == 0.0
+      total_weight = 0.000001
+    end
     parcel = ::EasyPost::Parcel.create(
       :weight => total_weight
     )
