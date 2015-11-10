@@ -73,6 +73,7 @@ Spree::Stock::Estimator.class_eval do
     ep_address_attrs[:street1] = address.address1
     ep_address_attrs[:street2] = address.address2
     ep_address_attrs[:city] = address.city
+    ep_address_attrs[:country] = address.country.try(:iso)
     ep_address_attrs[:state] = address.state ? address.state.abbr : address.state_name
     ep_address_attrs[:zip] = address.zipcode
     ep_address_attrs[:phone] = address.phone
