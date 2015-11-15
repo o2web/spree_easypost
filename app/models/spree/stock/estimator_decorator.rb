@@ -1,5 +1,5 @@
 Spree::Stock::Estimator.class_eval do
-  def shipping_rates(package)
+  def shipping_rates(package, shipping_method_filter = ShippingMethod::DISPLAY_ON_FRONT_END)
     logger.debug '---estimating shipping rates---'
     logger.debug "package: #{package.inspect}"
 
