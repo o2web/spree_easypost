@@ -29,13 +29,14 @@ class Spree::EasyPost::AddressVerification
   end
 
   def parse(response)
-    if response.message.present?
+    if response.try(:message).present?
       add_error(response.message)
     else
       @address.address1 = response.street1
       @address.address2 = response.street2
       @address.city     = response.city
-      @address.state    = Spree::State.find_by_abbr(response.state)
+      @address.country  = Spree::Country.find_by_iso(response.country)
+      @address.state    = Spree::State.find_by(abbr: response.state, country: @address.country)
       @address.zipcode  = response.zip
     end
   end
