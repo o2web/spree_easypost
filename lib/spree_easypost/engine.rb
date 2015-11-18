@@ -17,6 +17,18 @@ module Spree
       end
 
       config.to_prepare &method(:activate).to_proc
+
+      module ::EasyPost
+        @@in_charge = nil
+
+        def self.in_charge=(in_charge)
+          @@in_charge = in_charge
+        end
+
+        def self.in_charge
+          @@in_charge
+        end
+      end
     end
   end
 end

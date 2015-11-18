@@ -1,4 +1,6 @@
 Spree::Stock::Estimator.class_eval do
+  class TotalPriceTooHighForCustoms < StandardError; end
+
   def shipping_rates(package, shipping_method_filter = nil)
     logger.debug '---estimating shipping rates---'
     logger.debug "package: #{package.inspect}"
@@ -29,7 +31,12 @@ Spree::Stock::Estimator.class_eval do
     parcel = build_parcel(package)
     logger.debug "parcel: #{parcel.inspect}"
 
-    shipment = build_shipment(from_address, to_address, parcel)
+    if from_address.country != to_address.country
+      customs = build_customs(package, from_address)
+      logger.debug "customs: #{customs.inspect}"
+    end
+
+    shipment = build_shipment(from_address, to_address, parcel, customs)
     logger.debug "shipment: #{shipment.inspect}"
 
     rates = shipment.rates.sort_by { |r| r.rate.to_i }
@@ -89,16 +96,39 @@ Spree::Stock::Estimator.class_eval do
     if total_weight == 0.0
       total_weight = 0.1
     end
-    parcel = ::EasyPost::Parcel.create(
-      :weight => total_weight
+    ::EasyPost::Parcel.create(weight: total_weight)
+  end
+
+  def build_customs(package, from_address)
+    items = package.contents.map do |item|
+      variant, line_item = item.variant, item.line_item
+      ::EasyPost::CustomsItem.create(
+        :description => variant.name,
+        :quantity => line_item.quantity,
+        :value => line_item.quantity * variant.price,
+        :weight => line_item.quantity * variant.weight,
+        # :hs_tariff_number => 610910,
+        :origin_country => from_address.country,
+      )
+    end
+    if items.map(&:value).map(&:to_f).sum > 2500.0
+      raise TotalPriceTooHighForCustoms
+    end
+    ::EasyPost::CustomsInfo.create(
+      :eel_pfc => 'NOEEI 30.37(a)',
+      :customs_certify => true,
+      :customs_signer => EasyPost.in_charge,
+      :contents_type => 'merchandise',
+      :customs_items => items
     )
   end
 
-  def build_shipment(from_address, to_address, parcel)
-    shipment = ::EasyPost::Shipment.create(
+  def build_shipment(from_address, to_address, parcel, customs)
+    ::EasyPost::Shipment.create(
       :to_address => to_address,
       :from_address => from_address,
-      :parcel => parcel
+      :parcel => parcel,
+      :customs_info => customs,
     )
   end
 
