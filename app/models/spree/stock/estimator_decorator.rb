@@ -45,11 +45,16 @@ Spree::Stock::Estimator.class_eval do
     
     if rates.any?
       rates.each do |rate|
+        tax_rates = @order.tax_zone.tax_rates.to_a
+        if tax_rates.any?
+          tax_rate_id = tax_rates.first.id
+        end
         package.shipping_rates << Spree::ShippingRate.new(
           :name => "#{rate.carrier} #{rate.service}",
           :cost => rate.rate,
           :easy_post_shipment_id => rate.shipment_id,
-          :easy_post_rate_id => rate.id
+          :easy_post_rate_id => rate.id,
+          :tax_rate_id => tax_rate_id
         )
       end
 
