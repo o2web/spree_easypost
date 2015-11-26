@@ -45,7 +45,7 @@ Spree::Stock::Estimator.class_eval do
     
     if rates.any?
       rates.each do |rate|
-        tax_rates = @order.tax_zone.tax_rates.to_a
+        tax_rates = @order.tax_zone.try(:tax_rates).try(:to_a) || []
         if tax_rates.any?
           tax_rate_id = tax_rates.first.id
         end
