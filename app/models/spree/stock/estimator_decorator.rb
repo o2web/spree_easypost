@@ -1,6 +1,8 @@
 Spree::Stock::Estimator.class_eval do
   class TotalPriceTooHighForCustoms < StandardError; end
 
+  CONVERSION_FROM_KG_TO_OZ = 35.274
+
   def shipping_rates(package, shipping_method_filter = nil)
     logger.debug '---estimating shipping rates---'
     logger.debug "package: #{package.inspect}"
@@ -95,7 +97,7 @@ Spree::Stock::Estimator.class_eval do
 
   def build_parcel(package)
     total_weight = package.contents.sum do |item|
-      item.line_item.quantity * item.variant.weight
+      item.variant.weight * CONVERSION_FROM_KG_TO_OZ
     end
 
     if total_weight == 0.0
@@ -105,20 +107,24 @@ Spree::Stock::Estimator.class_eval do
   end
 
   def build_customs(package, from_address)
+    line_items = {}
     items = package.contents.map do |item|
       variant, line_item = item.variant, item.line_item
-      ::EasyPost::CustomsItem.create(
+      next if line_items[line_item.id]
+      line_items[line_item.id] = ::EasyPost::CustomsItem.create(
         :description => variant.name,
         :quantity => line_item.quantity,
         :value => line_item.quantity * variant.price,
-        :weight => line_item.quantity * variant.weight,
+        :weight => line_item.quantity * variant.weight * CONVERSION_FROM_KG_TO_OZ,
         # :hs_tariff_number => 610910,
         :origin_country => from_address.country,
       )
-    end
+    end.compact
+
     if items.map(&:value).map(&:to_f).sum > 2500.0
       raise TotalPriceTooHighForCustoms
     end
+
     ::EasyPost::CustomsInfo.create(
       :eel_pfc => 'NOEEI 30.37(a)',
       :customs_certify => true,
