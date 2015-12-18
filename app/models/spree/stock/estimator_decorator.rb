@@ -1,7 +1,7 @@
 Spree::Stock::Estimator.class_eval do
   class TotalPriceTooHighForCustoms < StandardError; end
 
-  CONVERSION_FROM_KG_TO_OZ = 35.274
+  CONVERSION_FROM_KG_TO_OZ ||= 35.274
 
   def shipping_rates(package, shipping_method_filter = nil)
     logger.debug '---estimating shipping rates---'
