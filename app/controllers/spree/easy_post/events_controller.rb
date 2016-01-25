@@ -18,7 +18,6 @@ module Spree
           mode: e.mode,
           easypost_id: e.id,
           object: e.object,
-          mode: e.mode,
           result: e.result.to_s
         )
        
